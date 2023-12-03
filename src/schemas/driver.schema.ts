@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
 
-type Status = "NO_BORDER" | "US_CITIZEN" | "GREEN_CARD"
+type Status = "NO_BORDER" | "US_CITIZEN" | "GREEN_CARD" | 'WORK_AUTHORIZATON' | 'BORDER'
 type CarType = "box truck" | "sprinter" | "large"
 
 export type DriverDocument = HydratedDocument<Driver>;
@@ -23,7 +23,7 @@ export class Driver{
   @Prop({ type: Date, default: Date.now, required:true })
   dateAvailable: Date;
 
-  @Prop({required:true})
+  @Prop()
   phone: string;
 
   @Prop({required:true})
