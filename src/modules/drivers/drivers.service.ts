@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Driver } from 'src/schemas/driver.schema';
 import { Model } from 'mongoose';
 import { ZipToCoordsService } from '../coords/zipToCoords.service';
-import { GOOGLE_MAP_API_RESULT } from 'src/types/gmap-api-response';
+import { IMapboxPlace } from 'src/types/mapbox-api-response';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { SchedulerRegistry } from '@nestjs/schedule';
@@ -39,13 +39,13 @@ export class DriversService {
   }
 
   async create(driver: Driver): Promise<Driver> {
-    const place:GOOGLE_MAP_API_RESULT = await this.zipToCoordsService.getPlaceByZip(driver.zipCode);
-    const position = [place.geometry.location.lat, place.geometry.location.lng];
+    const place:IMapboxPlace = await this.zipToCoordsService.getPlaceByZip(driver.zipCode);
+    const position = [place.center[0], place.center[1]];
     driver.active = new Date(driver.dateAvailable)>new Date() ? false :true
     const newDriver = new this.driverModel({
       ...driver,
       position,
-      locationName:place.formatted_address
+      locationName:place.place_name
     });
     if (
       (newDriver.active === false) && 
@@ -69,12 +69,12 @@ export class DriversService {
   async update(id: string, driver: Driver): Promise<Driver> {
     const now = Date.now()
     const dateAvailable = new Date(driver.dateAvailable).getTime()    
-    const place:GOOGLE_MAP_API_RESULT = await this.zipToCoordsService.getPlaceByZip(driver.zipCode);
-    const position = [place.geometry.location.lat, place.geometry.location.lng];
+    const place:IMapboxPlace = await this.zipToCoordsService.getPlaceByZip(driver.zipCode);
+    const position = [place.center[0], place.center[1]];
     const newDriver:Driver = {
       ...driver,
       position,
-      locationName:place.formatted_address
+      locationName:place.place_name
     };    
     if (
       (newDriver.active === false) && 
