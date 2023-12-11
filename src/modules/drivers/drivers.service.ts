@@ -40,7 +40,7 @@ export class DriversService {
 
   async create(driver: Driver): Promise<Driver> {
     const place:IMapboxPlace = await this.zipToCoordsService.getPlaceByZip(driver.zipCode);
-    const position = [place.center[0], place.center[1]];
+    const position = [place.center[1], place.center[0]];
     driver.active = new Date(driver.dateAvailable)>new Date() ? false :true
     const newDriver = new this.driverModel({
       ...driver,
@@ -70,7 +70,7 @@ export class DriversService {
     const now = Date.now()
     const dateAvailable = new Date(driver.dateAvailable).getTime()    
     const place:IMapboxPlace = await this.zipToCoordsService.getPlaceByZip(driver.zipCode);
-    const position = [place.center[0], place.center[1]];
+    const position = [place.center[1], place.center[0]];
     const newDriver:Driver = {
       ...driver,
       position,
