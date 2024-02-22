@@ -20,6 +20,7 @@ export class ZipToCoordsService {
         throw new HttpException('No coordinates found for the provided zip code.', HttpStatus.UNPROCESSABLE_ENTITY);
       }
     } catch (error) {
+      console.log(error)
       throw new HttpException('Failed to fetch coordinates',HttpStatus.UNPROCESSABLE_ENTITY);
     }
   }
