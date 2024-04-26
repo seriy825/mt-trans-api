@@ -39,23 +39,26 @@ export class DriversService {
   }
 
   async create(driver: Driver): Promise<Driver> {
-    const place:IMapboxPlace = await this.zipToCoordsService.getPlaceByZip(driver.zipCode);
-    const position = [place.center[1], place.center[0]];
-    driver.active = new Date(driver.dateAvailable)>new Date() ? false :true
+    const place: IMapboxPlace = await this.zipToCoordsService.getPlaceByZip(
+      driver.zipCode
+    )
+    const position = [place.center[1], place.center[0]]
+    driver.active = !(new Date(driver.dateAvailable) > new Date())
     const newDriver = new this.driverModel({
       ...driver,
       position,
-      locationName:place.place_name
-    });
+      locationName: place.place_name,
+    })
     if (
-      (newDriver.active === false) && 
-      (new Date(newDriver.dateAvailable).getTime() > new Date().getTime()) 
+      !newDriver.active &&
+      new Date(newDriver.dateAvailable).getTime() > new Date().getTime()
     ) {
-      const delay = new Date(newDriver.dateAvailable).getTime() - new Date().getTime();
+      const delay =
+        new Date(newDriver.dateAvailable).getTime() - new Date().getTime()
       this.clearScheduledJob(newDriver.id.toString())
-      this.scheduleDriverActivation(newDriver.id.toString(), delay);
+      this.scheduleDriverActivation(newDriver.id.toString(), delay)
     }
-    return await newDriver.save();
+    return await newDriver.save()
   }
 
   async findAll(): Promise<Driver[]> {
@@ -68,23 +71,25 @@ export class DriversService {
 
   async update(id: string, driver: Driver): Promise<Driver> {
     const now = Date.now()
-    const dateAvailable = new Date(driver.dateAvailable).getTime()    
-    const place:IMapboxPlace = await this.zipToCoordsService.getPlaceByZip(driver.zipCode);
-    const position = [place.center[1], place.center[0]];
-    const newDriver:Driver = {
+    const dateAvailable = new Date(driver.dateAvailable).getTime()
+    const place: IMapboxPlace = await this.zipToCoordsService.getPlaceByZip(
+      driver.zipCode
+    )
+    const position = [place.center[1], place.center[0]]
+    const newDriver: Driver = {
       ...driver,
       position,
-      locationName:place.place_name
-    };    
-    if (
-      (newDriver.active === false) && 
-      (dateAvailable > now) 
-    ) {
-      const delay = new Date(newDriver.dateAvailable).getTime() - new Date().getTime();
-      this.scheduleDriverActivation(newDriver.id.toString(), delay);
+      locationName: place.place_name,
     }
-    this.socketServer.emit('driverUpdated', newDriver);
-    return await this.driverModel.findOneAndUpdate({id:{$eq:id}}, newDriver, { new: true });
+    if (!newDriver.active && dateAvailable > now) {
+      const delay =
+        new Date(newDriver.dateAvailable).getTime() - new Date().getTime()
+      this.scheduleDriverActivation(newDriver.id.toString(), delay)
+    }
+    this.socketServer.emit('driverUpdated', newDriver)
+    return await this.driverModel.findOneAndUpdate({id: {$eq: id}}, newDriver, {
+      new: true,
+    })
   }
 
   async delete(id: string): Promise<any> {
