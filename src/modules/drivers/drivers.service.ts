@@ -1,41 +1,46 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Driver } from 'src/schemas/driver.schema';
-import { Model } from 'mongoose';
-import { ZipToCoordsService } from '../coords/zipToCoords.service';
-import { IMapboxPlace } from 'src/types/mapbox-api-response';
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import { Server } from 'socket.io';
-import { SchedulerRegistry } from '@nestjs/schedule';
+import {HttpException, HttpStatus, Injectable} from '@nestjs/common'
+import {InjectModel} from '@nestjs/mongoose'
+import {Driver} from 'src/schemas/driver.schema'
+import {Model} from 'mongoose'
+import {ZipToCoordsService} from '../coords/zipToCoords.service'
+import {IMapboxPlace} from 'src/types/mapbox-api-response'
+import {WebSocketGateway, WebSocketServer} from '@nestjs/websockets'
+import {Server} from 'socket.io'
+import {SchedulerRegistry} from '@nestjs/schedule'
 
 @Injectable()
 @WebSocketGateway()
 export class DriversService {
-  @WebSocketServer() private readonly socketServer:Server;
-  constructor(@InjectModel(Driver.name) private readonly driverModel: Model<Driver>,
-              private readonly schedulerRegistry: SchedulerRegistry,
-              private readonly zipToCoordsService: ZipToCoordsService,  
+  @WebSocketServer() private readonly socketServer: Server
+  constructor(
+    @InjectModel(Driver.name) private readonly driverModel: Model<Driver>,
+    private readonly schedulerRegistry: SchedulerRegistry,
+    private readonly zipToCoordsService: ZipToCoordsService
   ) {}
-  private scheduledJobs: Map<string, NodeJS.Timeout> = new Map();
+  private scheduledJobs: Map<string, NodeJS.Timeout> = new Map()
 
   private clearScheduledJob(driverId: string) {
-    const job = this.scheduledJobs.get(driverId);
+    const job = this.scheduledJobs.get(driverId)
     if (job) {
-      clearTimeout(job);
-      this.scheduledJobs.delete(driverId);
-      this.schedulerRegistry.deleteTimeout(driverId); 
+      clearTimeout(job)
+      this.scheduledJobs.delete(driverId)
+      this.schedulerRegistry.deleteTimeout(driverId)
     }
   }
 
   private scheduleDriverActivation(driverId: string, delay: number) {
-    this.clearScheduledJob(driverId);
+    this.clearScheduledJob(driverId)
     const job = setTimeout(async () => {
-      const newDriver = await this.driverModel.findOneAndUpdate({id:{$eq:driverId}}, { active: true }, { new: true });
-      this.socketServer.emit('driverUpdated', newDriver);
-      this.clearScheduledJob(driverId);
-    }, delay);
-    this.scheduledJobs.set(driverId, job);
-    this.schedulerRegistry.addTimeout(driverId, job);
+      const newDriver = await this.driverModel.findOneAndUpdate(
+        {id: {$eq: driverId}},
+        {active: true},
+        {new: true}
+      )
+      this.socketServer.emit('driverUpdated', newDriver)
+      this.clearScheduledJob(driverId)
+    }, delay)
+    this.scheduledJobs.set(driverId, job)
+    this.schedulerRegistry.addTimeout(driverId, job)
   }
 
   async create(driver: Driver): Promise<Driver> {
@@ -62,11 +67,12 @@ export class DriversService {
   }
 
   async findAll(): Promise<Driver[]> {
-    return await this.driverModel.find().exec();
+    console.log(123)
+    return await this.driverModel.find().exec()
   }
 
   async findById(id: string): Promise<Driver> {
-    return await this.driverModel.findOne({id:{$eq:id}}).exec();
+    return await this.driverModel.findOne({id: {$eq: id}}).exec()
   }
 
   async update(id: string, driver: Driver): Promise<Driver> {
@@ -93,6 +99,19 @@ export class DriversService {
   }
 
   async delete(id: string): Promise<any> {
-    return await this.driverModel.findOneAndDelete({id:{$eq:id}});
+    return await this.driverModel.findOneAndDelete({id: {$eq: id}})
+  }
+
+  async deactivateAll(): Promise<boolean> {
+    try {
+      await this.driverModel.updateMany({active: true}, {$set: {active: false}})
+      return true
+    } catch (error) {
+      console.log(error)
+      throw new HttpException(
+        'Failed to deactivate all',
+        HttpStatus.UNPROCESSABLE_ENTITY
+      )
+    }
   }
 }
