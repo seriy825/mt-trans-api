@@ -67,7 +67,6 @@ export class DriversService {
   }
 
   async findAll(): Promise<Driver[]> {
-    console.log(123)
     return await this.driverModel.find().exec()
   }
 

@@ -7,10 +7,13 @@ import {
   Param,
   Delete,
   Put,
+  UseGuards,
 } from '@nestjs/common'
 import {DriversService} from './drivers.service'
 import {Driver} from 'src/schemas/driver.schema'
+import {AuthGuard} from '@nestjs/passport'
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('api/drivers')
 export class DriversController {
   constructor(private readonly driversService: DriversService) {}
